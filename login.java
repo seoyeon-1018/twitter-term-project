@@ -10,8 +10,8 @@ public class login {
 		}
 	
 	static class LoginFrame extends JFrame {
-		private final JTextField idField = new JTextField(15); // 요구사항: 2개의 텍스트박스
-		private final JPasswordField pwdField = new JPasswordField(15); // 비밀번호는 마스킹(텍스트필드 원하면 JTextField로 교체 가능)
+		private final JTextField idField = new JTextField(15); 
+		private final JPasswordField pwdField = new JPasswordField(15); 
 		private final JButton loginBtn = new JButton("Login");
 		private final JLabel statusLabel = new JLabel(" ");
 
@@ -70,7 +70,7 @@ public class login {
 			setStatus("로그인 중...", Color.DARK_GRAY);
 
 
-			// UI 멈춤 방지를 위해 SwingWorker 사용(간단 예시)
+			
 			
 		}
 		
