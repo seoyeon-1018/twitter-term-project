@@ -13,7 +13,8 @@ create table user(
 --  혹자가 본인을 팔로우 및 본인 포스트에 좋아요를 받을 시 경험치 부여 **팔로우:50의 경험치 | 좋아요: 10의 경험치;
 -- 누적 경험치 달성 시 레벨 업++; (but, 레벨 증가에 따라 필요 경험치도 비례하여 증가
 --  레벨은 20레벨 까지 --> 최고 레벨 달성 시 파란베찌 부여
-
+USE twitter;
+DROP TABLE IF EXISTS posts;
 CREATE TABLE posts (
   post_id INT AUTO_INCREMENT PRIMARY KEY,     -- 게시글 고유 번호 | AUTO_INCREMENT을 통해 데이터베이스 자동관리 설정(1++) 
   content TEXT,                               -- 게시글 내용
@@ -60,21 +61,15 @@ CREATE TABLE comment_like (
 );
 
 CREATE TABLE following (
-  f_id INT AUTO_INCREMENT PRIMARY KEY,       -- 팔로잉 고유 ID
-  user_id VARCHAR(20) NOT NULL,              -- 팔로우 당하는 사람
-  follower_id VARCHAR(20) NOT NULL,          -- 팔로우 하는 사람
-  FOREIGN KEY (user_id) REFERENCES user(user_id),
-  FOREIGN KEY (follower_id) REFERENCES user(user_id)
+  f_id INT AUTO_INCREMENT PRIMARY KEY,
+  user_id VARCHAR(20) NOT NULL,
+  follower_id VARCHAR(20) NOT NULL,
+  FOREIGN KEY (user_id) REFERENCES `user`(user_id),
+  FOREIGN KEY (follower_id) REFERENCES `user`(user_id),
+  UNIQUE KEY uq_follow (user_id, follower_id),   -- 중복 팔로우 방지
+  KEY idx_follow_user (user_id),
+  KEY idx_follow_follower (follower_id)
 );
-
-CREATE TABLE follower (
-  f_id INT AUTO_INCREMENT PRIMARY KEY,       -- 팔로워 고유 ID
-  user_id VARCHAR(20) NOT NULL,              -- 나(팔로우 당하는 사람)
-  follower_id VARCHAR(20) NOT NULL,          -- 나를 팔로우한 사람
-  FOREIGN KEY (user_id) REFERENCES user(user_id),
-  FOREIGN KEY (follower_id) REFERENCES user(user_id)
-);
-
 
 CREATE TABLE block (
   block_id VARCHAR(20) NOT NULL,             -- 차단된 사람
@@ -103,4 +98,41 @@ CREATE TABLE post_tag (
   UNIQUE (post_id, tag)                      -- 한 게시글에 같은 태그 중복 저장 방지
 );
 
-insert into user values('kim','12345',1,0,false,0,0);
+CREATE TABLE IF NOT EXISTS user_profile (
+  user_id     VARCHAR(20) NOT NULL PRIMARY KEY,
+  bio         TEXT,
+  updated_at  TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  FOREIGN KEY (user_id) REFERENCES user(user_id)
+);
+
+USE twitter;
+
+-- 1) 기본 INSERT (한 번만 실행)
+INSERT INTO `user` (user_id, pwd) 
+VALUES ('kim', '12345');
+
+-- 선택: 프로필(상태메시지) 빈 값으로 만들어두기
+INSERT INTO user_profile (user_id, bio) 
+VALUES ('kim', '') ;
+
+-- 확인
+SELECT user_id, level, exp, badge, followers, followings 
+FROM `user` WHERE user_id='kim';
+SELECT * FROM user_profile WHERE user_id='kim';
+
+
+
+-- 1) 글 등록 (내용에 #test 포함)
+INSERT INTO posts (content, writer_id)
+VALUES ('테스트 피드1\n#test', 'kim');
+
+-- 2) 방금 등록한 글의 post_id에 해시태그 'test' 저장(# 없이)
+INSERT INTO post_tag (post_id, tag)
+VALUES (LAST_INSERT_ID(), 'test')
+ON DUPLICATE KEY UPDATE tag = VALUES(tag);  -- 재실행해도 중복 에러 방지
+
+SELECT post_id, writer_id, content, created_at
+FROM posts
+ORDER BY post_id DESC
+LIMIT 5;
+
